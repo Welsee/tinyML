@@ -116,7 +116,7 @@ void loop() {
   int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
   for (int i = 0; i < kCategoryCount; i++) {                        //model setting 파일에 선언 여기서는 kCategoryCount = 3
     int8_t curr_category_score = output->data.uint8[i];             //output->data.uint8[0] = 숫자 0, output->data.uint8[1] = 숫자 1,output->data.uint8[2] = 숫자 2,
-    const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨
+    const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨!!!!
     TF_LITE_REPORT_ERROR(error_reporter, "%s : %d", currCategory, curr_category_score);
   }
 //  Serial.write(input->data.int8, bytesPerFrame);
