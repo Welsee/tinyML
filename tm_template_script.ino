@@ -1,8 +1,8 @@
 
 //적외선 리모컨 case
-//FF30CF FF18E7 FF7A85 : 1, 2, 3
-//FF10EF FF38C7 FF5AA5 : 4, 5, 6
-//FF42BD FF4AB5 FF52AD : 7, 8, 9
+
+
+
 
 #include <IRremote.h>
 #include <TensorFlowLite.h>
@@ -18,6 +18,19 @@
 #include "tensorflow/lite/version.h"
 
 #define REMOTEPIN 8               //적외선 센서가 연결된 디지털 핀 번호 매핑
+
+#define re_0  //call back value from remote results, write after
+#define re_1
+#define re_2
+#define re_3
+#define re_4
+#define re_5
+#define re_6
+#define re_8
+#define re_9
+#define pass_point 100
+
+
 
 IRrecv irrecv(REMOTEPIN);
 decode_results results;           //수신된 적외선 신호를 저장할 변수
@@ -90,13 +103,6 @@ void setup() {
 
 void loop() {
 
-  if(irrecv.decode(%results)){          //적외선통신 설정,
-    Serial.println(results.value, HEX);
-
-    delay(30);
-    irrecv.resume();
-  }
-
   
   // Get image from provider.
   if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,
@@ -120,4 +126,20 @@ void loop() {
     TF_LITE_REPORT_ERROR(error_reporter, "%s : %d", currCategory, curr_category_score);
   }
 //  Serial.write(input->data.int8, bytesPerFrame);
+  if(irrecv.decode(%results)){          //적외선통신 설정,
+    Serial.println(results.value, HEX); //results.value is remote values, HAVE TO USE IT 
+
+    int input = results.value;    //https://crazydragon.tistory.com/115   reference
+      digitalWrite(PINNUMBER, input%2);
+      digitalWrite(PINNUMBER, (input>>1)%2);
+      digitalWrite(PINNUMBER, (input>>2)%2);
+      digitalWrite(PINNUMBER, (input>>3)%2);      //HAVE TO REGISTER PINNUMBER and check this in other citcuit
+    
+
+
+    delay(30);
+    irrecv.resume();
+  }
+
+
 }
