@@ -101,8 +101,18 @@ void setup() {
 
 void loop() {
 
-  
-  // Get image from provider.
+
+  if(irrecv.decode(&results)){           //적외선통신 설정,----------------------------------------------------------
+    Serial.println(results.value, HEX); //results.value is remote values, HAVE TO USE IT 
+
+    int remote_number = results.value;    //https://crazydragon.tistory.com/115   reference
+    //digitalWrite(PINNUMBER, input%2);            //우리 led로 수신호를 입력함
+    //digitalWrite(PINNUMBER, (input>>1)%2);
+    //digitalWrite(PINNUMBER, (input>>2)%2);
+    //digitalWrite(PINNUMBER, (input>>3)%2);      //HAVE TO REGISTER PINNUMBER and check this in other citcuit
+
+
+     // Get image from provider.
   if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,
                             input->data.int8)) {
     TF_LITE_REPORT_ERROR(error_reporter, "Image capture failed.");
@@ -120,19 +130,16 @@ void loop() {
   int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
   for (int i = 0; i < kCategoryCount; i++) {                        //model setting 파일에 선언 여기서는 kCategoryCount = 3
     int8_t curr_category_score = output->data.uint8[i];             //output->data.uint8[0] = 숫자 0, output->data.uint8[1] = 숫자 1,output->data.uint8[2] = 숫자 2,
-    const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨!!!!
+    const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨
     TF_LITE_REPORT_ERROR(error_reporter, "%s : %d", currCategory, curr_category_score);
   }
 //  Serial.write(input->data.int8, bytesPerFrame);
-  if(irrecv.decode(results)){          //적외선통신 설정,
-    Serial.println(results.value, HEX); //results.value is remote values, HAVE TO USE IT 
-
-    int input = results.value;    //https://crazydragon.tistory.com/115   reference
-      digitalWrite(PINNUMBER, input%2);
-      digitalWrite(PINNUMBER, (input>>1)%2);
-      digitalWrite(PINNUMBER, (input>>2)%2);
-      digitalWrite(PINNUMBER, (input>>3)%2);      //HAVE TO REGISTER PINNUMBER and check this in other citcuit
-    
+    if(output->data.uint8[remote_number] >= 100) {
+      Serial.println("correct number. indentify");
+    }
+    else {
+      Serial.println("wrong.");
+    }
 
 
     delay(30);
