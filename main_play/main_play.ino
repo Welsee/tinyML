@@ -1,7 +1,17 @@
-#include <IRremote.hpp>
+/* Copyright 2019 The TensorFlow Authors. All Rights Reserved.
 
-//적외선 리모컨 case
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
 
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
 
 #include <TensorFlowLite.h>
 
@@ -15,25 +25,6 @@
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
-#define REMOTEPIN 8               //적외선 센서가 연결된 디지털 핀 번호 매핑
-
-#define re_0  //call back value from remote results, write after
-#define re_1
-#define re_2
-#define re_3
-#define re_4
-#define re_5
-#define re_6
-#define re_8
-#define re_9
-#define pass_point 100
-
-
-
-IRrecv irrecv(REMOTEPIN);
-decode_results results;           //수신된 적외선 신호를 저장할 변수
-
-
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
 tflite::ErrorReporter* error_reporter = nullptr;
@@ -41,7 +32,12 @@ const tflite::Model* model = nullptr;
 tflite::MicroInterpreter* interpreter = nullptr;
 TfLiteTensor* input = nullptr;
 
-
+// In order to use optimized tensorflow lite kernels, a signed int8_t quantized
+// model is preferred over the legacy unsigned model format. This means that
+// throughout this project, input images must be converted from unisgned to
+// signed format. The easiest and quickest way to convert from unsigned to
+// signed 8-bit integers is to subtract 128 from the unsigned value to get a
+// signed value.
 
 // An area of memory to use for input, output, and intermediate arrays.
 constexpr int kTensorArenaSize = 136 * 1024;
@@ -50,14 +46,10 @@ static uint8_t tensor_arena[kTensorArenaSize];
 
 // The name of this function is important for Arduino compatibility.
 void setup() {
-
-  irrecv.enableIRIn();    //적외선 센서 활성화
-                          //2진수로 LED표현할거면 OUTPUT으로 pinMode 설정해야됨
-
-  Serial.begin(9600);
-
-  
-  static tflite::MicroErrorReporter micro_error_reporter;                       //tensor 모드 설정임 리모콘은 위쪽 예정
+  // Set up logging. Google style is to avoid globals or statics because of
+  // lifetime uncertainty, but since this has a trivial destructor it's okay.
+  // NOLINTNEXTLINE(runtime-global-variables)
+  static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
 
   // Map the model into a usable data structure. This doesn't involve any
@@ -71,7 +63,12 @@ void setup() {
     return;
   }
 
-
+  // Pull in only the operation implementations we need.
+  // This relies on a complete list of all the ops needed by this graph.
+  // An easier approach is to just use the AllOpsResolver, but this will
+  // incur some penalty in code space for op implementations that are not
+  // needed by this graph.
+  //
   // tflite::AllOpsResolver resolver;
   // NOLINTNEXTLINE(runtime-global-variables)
   static tflite::MicroMutableOpResolver<6> micro_op_resolver;
@@ -100,8 +97,6 @@ void setup() {
 }
 
 void loop() {
-
-  
   // Get image from provider.
   if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,
                             input->data.int8)) {
@@ -113,31 +108,15 @@ void loop() {
     TF_LITE_REPORT_ERROR(error_reporter, "Invoke failed.");
   }
 
-  TfLiteTensor* output = interpreter->output(0);                       //여기까지가 카메라, tensor 세팅임
-                                                                       //카메라 연산이 들어갈 자리. 그럼 위쪽에 리모콘 뭔가가 들어가야 됨                              
+  TfLiteTensor* output = interpreter->output(0);
+
   // Process the inference results.
   int8_t person_score = output->data.uint8[kPersonIndex];            //data.uint8[] 이게 점수를 알려줌 얘가 높으면 사람일 확률이 높음, 낮은면 아닐 확률이 높음
   int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
   for (int i = 0; i < kCategoryCount; i++) {                        //model setting 파일에 선언 여기서는 kCategoryCount = 3
     int8_t curr_category_score = output->data.uint8[i];             //output->data.uint8[0] = 숫자 0, output->data.uint8[1] = 숫자 1,output->data.uint8[2] = 숫자 2,
-    const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨!!!!
+    const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨
     TF_LITE_REPORT_ERROR(error_reporter, "%s : %d", currCategory, curr_category_score);
   }
 //  Serial.write(input->data.int8, bytesPerFrame);
-  if(irrecv.decode(%results)){          //적외선통신 설정,
-    Serial.println(results.value, HEX); //results.value is remote values, HAVE TO USE IT 
-
-    int input = results.value;    //https://crazydragon.tistory.com/115   reference
-      digitalWrite(PINNUMBER, input%2);
-      digitalWrite(PINNUMBER, (input>>1)%2);
-      digitalWrite(PINNUMBER, (input>>2)%2);
-      digitalWrite(PINNUMBER, (input>>3)%2);      //HAVE TO REGISTER PINNUMBER and check this in other citcuit
-    
-
-
-    delay(30);
-    irrecv.resume();
-  }
-
-
 }
