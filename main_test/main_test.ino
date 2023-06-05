@@ -133,7 +133,7 @@ void loop() {
   Serial.print(distance);
   Serial.println(" cm");
 
-  if(distance >= 27 || distance <= 35) {
+  if(distance >= 27 && distance <= 35) {
     digitalWrite(6, HIGH)
     digitalWrite(5, LOW)
   }
