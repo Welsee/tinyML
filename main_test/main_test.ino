@@ -11,9 +11,10 @@
 #include "tensorflow/lite/schema/schema_generated.h"
 #include "tensorflow/lite/version.h"
 
-long randNumber;
 int trigPin =9;
 int echoPin = 10;
+
+int randNumber = random(3);         //랜덤으로 변수를 만들어서 암호키를 만듬
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -46,6 +47,7 @@ void setup() {
   pinMode(echoPin, INPUT);
   pinMode(5, OUTPUT);
   pinMode(6, OUTPUT);
+  pinMode(8, OUTPUT);
 
   randomSeed(analogRead(0));
   static tflite::MicroErrorReporter micro_error_reporter;
@@ -91,9 +93,8 @@ void setup() {
 
 void loop() {
   // Get image from provider.
-
-  randNumber = random(3);
   long duration, distance;
+  int now_number;     //현재 가장 높은 가능성의 값을 저장해서 실제 값과 비교함
 
   // 초음파 센서로 거리 측정
   digitalWrite(trigPin, LOW); 
@@ -125,22 +126,36 @@ void loop() {
   int8_t person_score = output->data.uint8[kPersonIndex];            //data.uint8[] 이게 점수를 알려줌 얘가 높으면 사람일 확률이 높음, 낮은면 아닐 확률이 높음
   int8_t no_person_score = output->data.uint8[kNotAPersonIndex];
   for (int i = 0; i < kCategoryCount; i++) {                        //model setting 파일에 선언 여기서는 kCategoryCount = 3
-    int8_t curr_category_score = output->data.uint8[i];             //output->data.uint8[0] = 숫자 0, output->data.uint8[1] = 숫자 1,output->data.uint8[2] = 숫자 2,
+    int8_t curr_category_score = output->data.uint8[i];             //output->data.uint8[0] = 숫자 0, output->data.uint8[1] = 숫자 1,output->data.uint8[2] = 숫자 2, i가 숫자
     const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨
     TF_LITE_REPORT_ERROR(error_reporter, "%s : %d", currCategory, curr_category_score);
      // 거리 출력
-  Serial.print("\t\t\tDistance: ");
+  Serial.print("\t\tDistance: ");
   Serial.print(distance);
   Serial.println(" cm");
 
-  if(distance >= 27 || distance <= 35) {
-    digitalWrite(6, HIGH)
-    digitalWrite(5, LOW)
+  if(distance >= 27 && distance <= 35) {
+    digitalWrite(6, HIGH);
+    digitalWrite(5, LOW);
+    if(curr_category_score >= 70){
+      now_number = i;       //현재 가장 높은 확률의 수를 저장함, 나중에 이걸 암호키랑 비교할거임
+      if(randNumber == now_number){
+        Serial.print("\t\t\tcorrect. key is ");
+        Serial.println(randNumber);
+        digitalWrite(8, HIGH);
+      }
+      else {
+        Serial.print("\t\t\twrong. key is ");
+        Serial.println(randNumber);
+        digitalWrite(8, LOW);
+      }
+    }
   }
   else{
-    digitalWrite(6, LOW)
-    digitalWrite(5, HIGH)
+    digitalWrite(6, LOW);
+    digitalWrite(5, HIGH);
   }
+  
 
   }
 //  Serial.write(input->data.int8, bytesPerFrame);
