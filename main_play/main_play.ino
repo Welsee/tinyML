@@ -1,10 +1,8 @@
+#include <IRremote.hpp>
 
 //적외선 리모컨 case
 
 
-
-
-#include <IRremote.h>
 #include <TensorFlowLite.h>
 
 #include "main_functions.h"
