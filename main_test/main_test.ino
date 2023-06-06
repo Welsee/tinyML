@@ -35,21 +35,17 @@ constexpr int kTensorArenaSize = 136 * 1024;
 static uint8_t tensor_arena[kTensorArenaSize];
 }  // namespace
 
-// The name of this function is important for Arduino compatibility.
 void setup() {
-  // Set up logging. Google style is to avoid globals or statics because of
-  // lifetime uncertainty, but since this has a trivial destructor it's okay.
-  // NOLINTNEXTLINE(runtime-global-variables)
-
-  Serial.begin(9600);
-
-   pinMode(trigPin, OUTPUT);
+ 
+  Serial.begin(9600);               //pin 설정
+  
+   pinMode(trigPin, OUTPUT);        //초음파 pin 설정
   pinMode(echoPin, INPUT);
   pinMode(5, OUTPUT);
-  pinMode(6, OUTPUT);
-  pinMode(8, OUTPUT);
+  pinMode(6, OUTPUT);               //거리 설정 핀
+  pinMode(8, OUTPUT);               //암호키 핀, 비교해서 맞으면 켜짐
 
-  randomSeed(analogRead(0));
+  randomSeed(analogRead(0));        //랜덤 변수 설정
   static tflite::MicroErrorReporter micro_error_reporter;
   error_reporter = &micro_error_reporter;
 
@@ -94,7 +90,7 @@ void setup() {
 void loop() {
   // Get image from provider.
   long duration, distance;
-  int now_number;     //현재 가장 높은 가능성의 값을 저장해서 실제 값과 비교함
+  int now_number;     //현재 가장 높은 가능성의 값을 저장해서 실제 암호키랑 비교
 
   // 초음파 센서로 거리 측정
   digitalWrite(trigPin, LOW); 
@@ -110,7 +106,7 @@ void loop() {
   distance = duration * 0.034 / 2;
 
   
-  if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,
+  if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,                  //tensorflow가 처리하는 영역
                             input->data.int8)) {
     TF_LITE_REPORT_ERROR(error_reporter, "Image capture failed.");
   }
@@ -128,31 +124,36 @@ void loop() {
   for (int i = 0; i < kCategoryCount; i++) {                        //model setting 파일에 선언 여기서는 kCategoryCount = 3
     int8_t curr_category_score = output->data.uint8[i];             //output->data.uint8[0] = 숫자 0, output->data.uint8[1] = 숫자 1,output->data.uint8[2] = 숫자 2, i가 숫자
     const char* currCategory = kCategoryLabels[i];                  //클래스를 포함하는 배열, model settings.cpp파일에 선언됨
+    
     TF_LITE_REPORT_ERROR(error_reporter, "%s : %d", currCategory, curr_category_score);
      // 거리 출력
   Serial.print("\t\tDistance: ");
   Serial.print(distance);
   Serial.println(" cm");
 
-  if(distance >= 27 && distance <= 35) {
-    digitalWrite(6, HIGH);
+  if(distance >= 27 && distance <= 35) {        //초음파 센서 측정 27~35cm이 적정거리, 딱 이정도 거리에서 잘 인식
+    
+    digitalWrite(6, HIGH);                      //파란불 켜짐
     digitalWrite(5, LOW);
-    if(curr_category_score >= 70){
-      now_number = i;       //현재 가장 높은 확률의 수를 저장함, 나중에 이걸 암호키랑 비교할거임
-      if(randNumber == now_number){
+    if(curr_category_score >= 70){            //쉽게 person_score가 70점 넘는다고 생각하면 됨
+      now_number = i;                        //i는 지금 점수가 가장 높은 값을 나타냄
+      if(randNumber == now_number){               //랜덤 생성 암호키가 지금의 값과 같다면 8번핀 led가 켜지고, 맞다고 나옴
         Serial.print("\t\t\tcorrect. key is ");
         Serial.println(randNumber);
         digitalWrite(8, HIGH);
       }
       else {
-        Serial.print("\t\t\twrong. key is ");
+        Serial.print("\t\t\twrong. key is ");     //틀리면 8번 핀 불이 켜지지 않음
         Serial.println(randNumber);
         digitalWrite(8, LOW);
       }
     }
+   digitalWrite(6, HIGH)
+    digitalWrite(5, LOW)
   }
+  
   else{
-    digitalWrite(6, LOW);
+    digitalWrite(6, LOW);                       //적정거리가 안되면 led가 거리를 유지하지 못하는 중이라고 알려줌
     digitalWrite(5, HIGH);
   }
   
