@@ -13,8 +13,15 @@
 
 int trigPin =9;
 int echoPin = 10;
+int interruptPin = 2;
+volatile byte state = LOW;
+int out_0 = A0;
+int out_1 = A1;
+int out_2 = A2;
 
-int randNumber_recieve = 0//random(3);         //랜덤으로 변수를 만들어서 암호키를 만듬, 잠시만 여기에
+
+
+int randNumber = 0;         //랜덤으로 변수를 만들어서 암호키를 만듬
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -38,12 +45,21 @@ static uint8_t tensor_arena[kTensorArenaSize];
 void setup() {
  
   Serial.begin(9600);               //pin 설정
+
+  attachInterrupt(digitalPinToInterrupt(interruptPin), make_random, CHANGE);                //인터럽트
+  pinMode(interruptPin, INPUT);
+  randomSeed(analogRead(0));
+  
   
    pinMode(trigPin, OUTPUT);        //초음파 pin 설정
   pinMode(echoPin, INPUT);
   pinMode(5, OUTPUT);
   pinMode(6, OUTPUT);               //거리 설정 핀
   pinMode(8, OUTPUT);               //암호키 핀, 비교해서 맞으면 켜짐
+
+  pinMode(out_0, OUTPUT);
+  pinMode(out_1, OUTPUT);
+  pinMode(out_2, OUTPUT);
 
   randomSeed(analogRead(0));        //랜덤 변수 설정
   static tflite::MicroErrorReporter micro_error_reporter;
@@ -89,6 +105,8 @@ void setup() {
 
 void loop() {
   // Get image from provider.
+
+  
   long duration, distance;
   int now_number;     //현재 가장 높은 가능성의 값을 저장해서 실제 암호키랑 비교
 
@@ -105,8 +123,18 @@ void loop() {
   // 거리 계산
   distance = duration * 0.034 / 2;
 
-  if(Serial.available()){
-    randNumber_receive = Serial.read();       //sub_ borde시리얼에서 값을 읽어옴
+  if(randNumber == 0) {
+    digitalWrite(out_0, HIGH);
+    digitalWrite(out_1, LOW);
+    digitalWrite(out_2, LOW);
+  } else if(randNumber == 1) {
+    digitalWrite(out_0, LOW);
+    digitalWrite(out_1, HIGH);
+    digitalWrite(out_2, LOW);
+  } else if (randNumber == 2) {
+    digitalWrite(out_0, LOW);
+    digitalWrite(out_1, LOW);
+    digitalWrite(out_2, HIGH);
   }
 
   
@@ -141,19 +169,19 @@ void loop() {
     digitalWrite(5, LOW);
     if(curr_category_score >= 70){            //쉽게 person_score가 70점 넘는다고 생각하면 됨
       now_number = i;                        //i는 지금 점수가 가장 높은 값을 나타냄
-      if(randNumber_recieve == now_number){               //랜덤 생성 암호키가 지금의 값과 같다면 8번핀 led가 켜지고, 맞다고 나옴
+      if(randNumber == now_number){               //랜덤 생성 암호키가 지금의 값과 같다면 8번핀 led가 켜지고, 맞다고 나옴
         Serial.print("\t\t\tcorrect. key is ");
-        Serial.println(randNumber_recieve);
+        Serial.println(randNumber);
         digitalWrite(8, HIGH);
       }
       else {
         Serial.print("\t\t\twrong. key is ");     //틀리면 8번 핀 불이 켜지지 않음
-        Serial.println(randNumber_recieve);
+        Serial.println(randNumber);
         digitalWrite(8, LOW);
       }
     }
-   digitalWrite(6, HIGH)
-    digitalWrite(5, LOW)
+   digitalWrite(6, HIGH);
+    digitalWrite(5, LOW);
   }
   
   else{
@@ -164,4 +192,11 @@ void loop() {
 
   }
 //  Serial.write(input->data.int8, bytesPerFrame);
+}
+
+
+void make_random() {
+  delayMicroseconds(2000);
+  state = !state;
+  randNumber = random(3);
 }

@@ -104,7 +104,7 @@ TfLiteStatus InitCamera(tflite::ErrorReporter* error_reporter) {          //tfli
 
 // Begin the capture and wait for it to finish
 TfLiteStatus PerformCapture(tflite::ErrorReporter* error_reporter) {            //캡쳐함수
-  TF_LITE_REPORT_ERROR(error_reporter, "Starting capture");
+  TF_LITE_REPORT_ERROR(error_reporter, " ");
   // Make sure the buffer is emptied before each capture
   myCAM.flush_fifo();
   myCAM.clear_fifo_flag();
@@ -113,7 +113,7 @@ TfLiteStatus PerformCapture(tflite::ErrorReporter* error_reporter) {            
   // Wait for indication that it is done
   while (!myCAM.get_bit(ARDUCHIP_TRIG, CAP_DONE_MASK)) {
   }
-  TF_LITE_REPORT_ERROR(error_reporter, "Image captured");                   //이미지 캡쳐 간격 0.05초
+  TF_LITE_REPORT_ERROR(error_reporter, " ");                   //이미지 캡쳐 간격 0.05초
   delay(50);
   // Clear the capture done flag
   myCAM.clear_fifo_flag();                                                  
@@ -124,8 +124,7 @@ TfLiteStatus PerformCapture(tflite::ErrorReporter* error_reporter) {            
 TfLiteStatus ReadData(tflite::ErrorReporter* error_reporter) {                  //카메라 버퍼에 저장된 이미지를 읽는 함수
   // This represents the total length of the JPEG data
   jpeg_length = myCAM.read_fifo_length();                                       //사진의 길이 저장
-  TF_LITE_REPORT_ERROR(error_reporter, "Reading %d bytes from Arducam",
-                       jpeg_length);
+  TF_LITE_REPORT_ERROR(error_reporter, " ");
   // Ensure there's not too much data for our buffer
   if (jpeg_length > MAX_JPEG_BYTES) {
     TF_LITE_REPORT_ERROR(error_reporter, "Too many bytes in FIFO buffer (%d)",      //너무 많은 데이터를 읽을 시에 에러출력
@@ -142,7 +141,7 @@ TfLiteStatus ReadData(tflite::ErrorReporter* error_reporter) {                  
     jpeg_buffer[index] = SPI.transfer(0x00);                                        //SPI핀을 통해 버퍼에 저장된 비트를 하나하나 jpeg배열에 저장
   }
   delayMicroseconds(15);
-  TF_LITE_REPORT_ERROR(error_reporter, "Finished reading");
+  TF_LITE_REPORT_ERROR(error_reporter, " ");
   myCAM.CS_HIGH();
   return kTfLiteOk;
 }
@@ -152,7 +151,7 @@ TfLiteStatus DecodeAndProcessImage(tflite::ErrorReporter* error_reporter,
                                    int image_width, int image_height,
                                    int8_t* image_data) {
   TF_LITE_REPORT_ERROR(error_reporter,
-                       "Decoding JPEG and converting to greyscale");                    //tensorflow lite가 사진을 분석 시작
+                       " ");                    //tensorflow lite가 사진을 분석 시작
   // Parse the JPEG headers. The image will be decoded as a sequence of Minimum
   // Coded Units (MCUs), which are 16x8 blocks of pixels.
   JpegDec.decodeArray(jpeg_buffer, jpeg_length);
@@ -232,7 +231,7 @@ TfLiteStatus DecodeAndProcessImage(tflite::ErrorReporter* error_reporter,
       }
     }
   }
-  TF_LITE_REPORT_ERROR(error_reporter, "Image decoded and processed");
+  TF_LITE_REPORT_ERROR(error_reporter, " ");
   return kTfLiteOk;
 }
 
