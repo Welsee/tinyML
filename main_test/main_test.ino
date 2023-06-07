@@ -14,7 +14,7 @@
 int trigPin =9;
 int echoPin = 10;
 
-int randNumber = random(3);         //랜덤으로 변수를 만들어서 암호키를 만듬
+int randNumber_recieve = 0//random(3);         //랜덤으로 변수를 만들어서 암호키를 만듬, 잠시만 여기에
 
 // Globals, used for compatibility with Arduino-style sketches.
 namespace {
@@ -105,6 +105,10 @@ void loop() {
   // 거리 계산
   distance = duration * 0.034 / 2;
 
+  if(Serial.available()){
+    randNumber_receive = Serial.read();       //sub_ borde시리얼에서 값을 읽어옴
+  }
+
   
   if (kTfLiteOk != GetImage(error_reporter, kNumCols, kNumRows, kNumChannels,                  //tensorflow가 처리하는 영역
                             input->data.int8)) {
@@ -137,14 +141,14 @@ void loop() {
     digitalWrite(5, LOW);
     if(curr_category_score >= 70){            //쉽게 person_score가 70점 넘는다고 생각하면 됨
       now_number = i;                        //i는 지금 점수가 가장 높은 값을 나타냄
-      if(randNumber == now_number){               //랜덤 생성 암호키가 지금의 값과 같다면 8번핀 led가 켜지고, 맞다고 나옴
+      if(randNumber_recieve == now_number){               //랜덤 생성 암호키가 지금의 값과 같다면 8번핀 led가 켜지고, 맞다고 나옴
         Serial.print("\t\t\tcorrect. key is ");
-        Serial.println(randNumber);
+        Serial.println(randNumber_recieve);
         digitalWrite(8, HIGH);
       }
       else {
         Serial.print("\t\t\twrong. key is ");     //틀리면 8번 핀 불이 켜지지 않음
-        Serial.println(randNumber);
+        Serial.println(randNumber_recieve);
         digitalWrite(8, LOW);
       }
     }
